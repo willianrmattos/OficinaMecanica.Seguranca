@@ -1,0 +1,59 @@
+services:
+  seguranca:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: oficinamecanica-seguranca:latest
+    container_name: oficinamecanica-seguranca
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    environment:
+      AZURE_FUNCTIONS_ENVIRONMENT: "Development"
+      AzureWebJobsStorage: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+      FUNCTIONS_WORKER_RUNTIME: "dotnet-isolated"
+      ConnectionStrings__DefaultConnection: "Server=tcp:sqlserver,1433;Database=SegurancaDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;"
+      JwtSettings__Issuer: "OficinaMecanica.Seguranca"
+      JwtSettings__Audience: "OficinaMecanica.Client"
+      JwtSettings__ExpiracaoMinutos: "60"
+      SeedAdmin__NomeUsuario: "${SEED_ADMIN_USUARIO}"
+      SeedAdmin__SenhaInicial: "${SEED_ADMIN_SENHA}"
+    ports:
+      - "7071:80"
+    restart: unless-stopped
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: oficinamecanica-seguranca-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      # Host 1434 (nao 1433) pra nao colidir com o sqlserver do repo irmao
+      # OficinaMecanica, que tambem publica 1433 - os dois podem rodar ao
+      # mesmo tempo sem conflito.
+      - "1434:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: oficinamecanica-seguranca-azurite
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:

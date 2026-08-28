@@ -1,0 +1,15 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+        "ConnectionStrings:DefaultConnection": "Server=tcp:<servidor>.database.windows.net,1433;Initial Catalog=<banco>;Persist Security Info=False;User ID=<usuario>;Password=<senha>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;",
+        "KeyVault:Uri": "https://<nome-do-key-vault>.vault.azure.net/",
+        "KeyVault:RsaKeyName": "<nome-da-chave-rsa-no-key-vault>",
+        "JwtSettings:Issuer": "<issuer-do-token>",
+        "JwtSettings:Audience": "<audience-do-token>",
+        "JwtSettings:ExpiracaoMinutos": "60",
+        "SeedAdmin:NomeUsuario": "<usuario-admin-inicial>",
+        "SeedAdmin:SenhaInicial": "<senha-admin-inicial>"
+    }
+}

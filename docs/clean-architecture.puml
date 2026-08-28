@@ -1,0 +1,36 @@
+@startuml clean-architecture
+title OficinaMecanica.Seguranca - Clean Architecture
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam defaultTextAlignment center
+
+skinparam rectangle {
+    RoundCorner     8
+    BorderColor     #888888
+    BorderThickness 1
+    FontSize        12
+    FontStyle       bold
+}
+
+skinparam ArrowColor     #555555
+skinparam ArrowFontColor #555555
+skinparam ArrowFontSize  10
+
+rectangle "Interface Adapters - Functions\n\nLoginFunction  JwksFunction  HealthFunction  RootFunction\nExceptionHandlingMiddleware  Program.cs" as func #BBDEFB
+
+rectangle "Use Cases - Application\n\nCommands + Handlers: LoginCommand / LoginCommandHandler / LoginCommandValidator\nQueries + Handlers: ObterJwksQuery / ObterJwksQueryHandler\nValidationBehavior (MediatR Pipeline)  DTOs: LoginResponseDto  JwksDto  JwkDto\nInterfaces: ITokenService  IPasswordHasher  IJwksProvider\nAutenticacaoException" as app #FFCDD2
+
+rectangle "Entities - Domain\n\nAggregate: Usuario\nEnum: PerfilUsuario\nInterfaces: IUsuarioRepository  IUnitOfWork\nDomainException" as dom #FFF9C4
+
+rectangle "Interface Adapters - Infrastructure\n\nAppDbContext (IUnitOfWork)  UsuarioRepository\nEF Configurations (Fluent API)  Migrations\nBCryptPasswordHasher\nKeyVaultTokenService / LocalRsaTokenService\nKeyVaultJwksProvider / LocalRsaJwksProvider\nSeedAdminService" as infra #BBDEFB
+
+rectangle "Frameworks and Drivers\n\nAzure SQL Database  Azure Functions Worker (isolated, .NET 8)  EF Core 8\nMediatR  FluentValidation  Azure Key Vault SDK (Keys/Cryptography)\nMicrosoft.Azure.Functions.Worker.Extensions.OpenApi\nBCrypt.Net-Next  Docker  xUnit  Moq  FluentAssertions  Bogus" as fw #C8E6C9
+
+func  -down->   app   : IMediator.Send()
+func  ..>       infra : DI (Program.cs)
+app   -down->   dom   : usa entidades e interfaces
+infra -up->     dom   : implementa IUsuarioRepository\ne IUnitOfWork
+infra -down->   fw    : usa EF Core, Key Vault SDK, BCrypt
+
+@enduml

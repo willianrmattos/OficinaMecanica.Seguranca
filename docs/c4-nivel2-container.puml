@@ -1,0 +1,23 @@
+@startuml c4-nivel2-container
+!include <C4/C4_Container>
+
+LAYOUT_TOP_DOWN()
+LAYOUT_WITH_LEGEND()
+
+title OficinaMecanica.Seguranca - Nivel 2: Container
+
+Person(admin, "Administrador", "Se autentica (login) pra obter um token JWT")
+System_Ext(consumidores, "APIs do ecossistema", "Ex: OficinaMecanica - validam tokens via JWKS")
+System_Ext(keyvault, "Azure Key Vault (kvfiap)", "Guarda a chave RS256 usada pra assinar os tokens. Provisionado no repositorio irmao OficinaMecanica.Infra.")
+
+System_Boundary(seguranca_sys, "OficinaMecanica.Seguranca") {
+    Container(func, "OficinaMecanica.Seguranca", ".NET 8 / Azure Functions (isolated worker)", "Emite tokens JWT RS256 (login) e expoe JWKS. Tier Consumption. Assina via Key Vault em producao (CryptographyClient, a chave privada nunca sai do vault) ou via uma chave RSA efemera gerada em memoria quando KeyVault:Uri nao esta configurado (dev local/testes, sem depender de Key Vault real).")
+    ContainerDb(db, "SegurancaDb", "Azure SQL Database", "Persiste usuarios (senha com hash BCrypt). Banco separado, mesmo servidor logico do OficinaMecanicaDb.")
+}
+
+Rel(admin, func, "Autentica (login)", "HTTPS / REST - via APIM (path /segurancaserver) em producao, direto em dev local")
+Rel(consumidores, func, "Busca chave publica pra validar tokens", "HTTPS / REST (anonimo)")
+Rel(func, db, "Le e escreve via EF Core", "TCP 1433 / TDS")
+Rel(func, keyvault, "Assina tokens e le a chave publica", "HTTPS (managed identity) - so em producao")
+
+@enduml

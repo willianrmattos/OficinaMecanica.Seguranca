@@ -1,0 +1,17 @@
+@startuml c4-nivel1-contexto
+!include <C4/C4_Context>
+
+LAYOUT_TOP_DOWN()
+LAYOUT_WITH_LEGEND()
+
+title OficinaMecanica.Seguranca - Nivel 1: Contexto do Sistema
+
+Person(admin, "Administrador", "Se autentica (login) pra obter um token JWT, usado depois nas demais APIs do ecossistema.")
+System_Ext(consumidores, "APIs do ecossistema", "Ex: OficinaMecanica. Validam tokens JWT emitidos aqui, buscando a chave publica via JWKS - sem segredo compartilhado.")
+
+System(seguranca, "OficinaMecanica.Seguranca", "Servico de autenticacao e autorizacao. Emite tokens JWT (RS256) e expoe a chave publica correspondente (JWKS) pra qualquer API do ecossistema validar.")
+
+Rel(admin, seguranca, "Autentica via", "HTTPS / REST")
+Rel(consumidores, seguranca, "Busca a chave publica (JWKS) pra validar tokens", "HTTPS / REST (anonimo)")
+
+@enduml

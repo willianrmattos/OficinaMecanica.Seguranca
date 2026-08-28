@@ -1,0 +1,136 @@
+# OficinaMecanica.Seguranca
+
+Servico de autenticacao/autorizacao do ecossistema OficinaMecanica — Azure
+Function (.NET 8, isolated worker) que emite tokens JWT assinados com
+**RS256** e expoe um endpoint **JWKS** para que outras APIs validem tokens
+usando somente a chave publica, sem segredo compartilhado.
+
+Extraido do monolito [OficinaMecanica](../OficinaMecanica), que ate entao
+tinha seu proprio `TokenService`/`AuthController` (JWT simetrico, 1 admin
+hardcoded em config).
+
+## Diagramas
+
+| Documento | Arquivo |
+|-----------|---------|
+| Clean Architecture (camadas e dependencias) | [docs/clean-architecture.puml](docs/clean-architecture.puml) |
+| C4 Nivel 1 - Contexto do sistema | [docs/c4-nivel1-contexto.puml](docs/c4-nivel1-contexto.puml) |
+| C4 Nivel 2 - Containers | [docs/c4-nivel2-container.puml](docs/c4-nivel2-container.puml) |
+| C4 Nivel 3 - Componentes | [docs/c4-nivel3-componente.puml](docs/c4-nivel3-componente.puml) |
+
+## Estrutura
+
+Clean Architecture (Domain -> Application -> Infrastructure -> Functions),
+DDD, CQRS via MediatR — mesmos padroes do repositorio `OficinaMecanica`. Ver
+`CLAUDE.md` para detalhes.
+
+## Infraestrutura
+
+Toda a infraestrutura deste servico e provisionada em
+[OficinaMecanica.Infra](../OficinaMecanica.Infra) (repositorio irmao,
+centraliza o Terraform de todo o ecossistema) — este repositorio nao tem
+pasta `infra/` propria.
+
+## Endpoints
+
+- `POST /login` — autentica e retorna um JWT RS256
+- `GET /.well-known/jwks.json` — chave publica pra validacao de tokens
+- `GET /health` — health check
+- `GET /swagger/ui` — Swagger UI (documentacao interativa dos 3 endpoints acima, via `Microsoft.Azure.Functions.Worker.Extensions.OpenApi`); spec em `GET /openapi/v3.json` (ou `/swagger.json`/`/swagger.yaml`)
+- `GET /` — redireciona (302) pro Swagger UI, mesma ideia do `RoutePrefix = string.Empty` do monolito (Swashbuckle); qualquer outro caminho desconhecido continua 404 normalmente (ver `CLAUDE.md` pro motivo de precisar de uma rota catch-all pra isso)
+
+(Sem prefixo `/api` — `host.json` define `routePrefix: ""` de proposito,
+pra `/.well-known/jwks.json` ficar exatamente nesse path convencional.)
+
+## Regras de Negocio
+
+- **Anti user enumeration**: falha de login (usuario inexistente, inativo ou
+  senha errada) sempre retorna a mesma mensagem (`"Usuário ou senha
+  inválidos."`, HTTP 401) — nao da pra descobrir se um nome de usuario
+  existe so pela resposta (`LoginCommandHandler.cs`).
+- **Usuario admin via seed idempotente**: no cold start da Function,
+  `SeedAdminService` verifica se ja existe algum usuario na tabela; se nao
+  existir, cria 1 admin com `NomeUsuario`/senha vindos de
+  `SeedAdmin:NomeUsuario`/`SeedAdmin:SenhaInicial` (config ou Key Vault, ver
+  `CLAUDE.md`). Roda toda vez que o processo sobe, mas so tem efeito uma vez
+  — sem CRUD de usuarios ainda (fora do escopo do MVP).
+- **Token RS256**: `LoginResponseDto` retorna `token` (JWT), `tipo`
+  (`"Bearer"`) e `expiracaoMinutos` (config `JwtSettings:ExpiracaoMinutos`).
+  Claims incluem `sub`/`name`/`role`, `iss` (`OficinaMecanica.Seguranca`) e
+  `aud` (`OficinaMecanica.Client`) — outras APIs validam so contra esses
+  valores + a chave publica do JWKS, sem segredo compartilhado.
+- **Rotacao de chave**: o header `kid` do JWT identifica a versao da chave
+  usada pra assinar; `JwksFunction` sempre expoe a chave publica
+  correspondente, permitindo rotacionar a chave no Key Vault no futuro sem
+  invalidar tokens ja emitidos com o `kid` anterior (na producao real — o
+  fallback de dev local usa um `kid` fixo, ver `CLAUDE.md` pra uma pegadinha
+  conhecida disso).
+
+## Rodando localmente
+
+### Via Docker Compose (recomendado)
+
+Pre-requisito: Docker Desktop. Sobe a Function, um SQL Server local e o
+Azurite (emulador de storage), tudo self-contained (sem depender de nenhum
+recurso Azure real) — o `KeyVault:Uri` fica de proposito sem valor, o que
+ativa o fallback de chave RSA local (ver `CLAUDE.md`).
+
+```bash
+cp .env.example .env
+# edite o .env com senhas de teste
+docker compose up -d
+```
+
+- `GET http://localhost:7071/health`
+- `POST http://localhost:7071/login` (body `{"nomeUsuario":"...","senha":"..."}`)
+- `GET http://localhost:7071/.well-known/jwks.json`
+- `GET http://localhost:7071/swagger/ui` — Swagger UI (mesmo `routePrefix` vazio via `func start`, so muda a porta se nao for a padrao)
+- `GET http://localhost:7071/` — redireciona pro Swagger UI acima
+
+### Via Azure Functions Core Tools (alternativa)
+
+Pre-requisitos: [.NET 8 SDK](https://dotnet.microsoft.com/download),
+[Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local),
+[Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) (emulador de storage).
+
+```bash
+dotnet build
+cd src/OficinaMecanica.Seguranca.Functions
+func start
+```
+
+## Executar Testes
+
+```bash
+dotnet test tests/OficinaMecanica.Seguranca.Domain.Tests
+dotnet test tests/OficinaMecanica.Seguranca.Application.Tests
+```
+
+`Integration.Tests` e um smoke test real (nao mockado): sobe Azurite +
+`func start` como processo real + LocalDB, e testa via `HttpClient` comum
+contra o host de verdade (isolated worker nao tem equivalente ao
+`WebApplicationFactory` do ASP.NET Core — ver `CLAUDE.md`). Requer
+[Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
+e [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite)
+instalados localmente:
+
+```bash
+dotnet test tests/OficinaMecanica.Seguranca.Integration.Tests
+```
+
+## Stack Tecnologica
+
+| Categoria | Tecnologia | Versao |
+|-----------|-----------|--------|
+| Runtime | .NET / Azure Functions Worker (isolated) | 8.0 / 2.52.0 |
+| ORM | Entity Framework Core (SQL Server) | 8.0.0 |
+| CQRS | MediatR | 12.2.0 |
+| Validacao | FluentValidation | 11.9.0 |
+| Hash de senha | BCrypt.Net-Next | 4.2.0 |
+| Assinatura RS256 | Azure.Security.KeyVault.Keys + Azure.Identity | 4.10.0 / 1.21.0 |
+| Validacao de token | Microsoft.IdentityModel.Tokens | 8.22.0 |
+| API Docs | Microsoft.Azure.Functions.Worker.Extensions.OpenApi | 1.6.0 |
+| Tracing | OpenTelemetry + Azure.Monitor.OpenTelemetry.Exporter | 1.7.0 |
+| Testes | xUnit + FluentAssertions + Moq + Bogus | 2.9.2 / 6.12.0 / 4.20.70 / 35.6.1 |
+| Infra (app) | Docker + Docker Compose | — |
+| Infra (cloud) | Terraform (`OficinaMecanica.Infra`: Function App Consumption, Azure SQL Database, Key Vault) | — |

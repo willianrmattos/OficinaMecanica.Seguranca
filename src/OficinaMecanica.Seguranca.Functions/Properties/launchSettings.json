@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "OficinaMecanica.Seguranca.Functions": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7227",
+      "launchBrowser": false
+    }
+  }
+}

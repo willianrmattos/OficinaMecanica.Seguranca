@@ -1,0 +1,58 @@
+@startuml c4-nivel3-componente
+!include <C4/C4_Component>
+
+LAYOUT_TOP_DOWN()
+LAYOUT_WITH_LEGEND()
+
+title OficinaMecanica.Seguranca - Nivel 3: Componente
+
+Person(admin, "Administrador", "Se autentica")
+System_Ext(consumidores, "APIs do ecossistema", "Validam tokens via JWKS")
+ContainerDb_Ext(db, "SegurancaDb", "Azure SQL Database")
+System_Ext(keyvault, "Azure Key Vault", "kvfiap - so em producao")
+
+Container_Boundary(seguranca, "OficinaMecanica.Seguranca (.NET 8 / Azure Functions isolated worker)") {
+
+    Component(middleware, "ExceptionHandlingMiddleware", "IFunctionsWorkerMiddleware", "Mapeia AutenticacaoException (401), ValidationException (400) e excecoes genericas (500) pra resposta HTTP - mesmo papel do ExceptionHandlingMiddleware do OficinaMecanica, adaptado pro pipeline proprio do Functions isolated worker.")
+
+    Component(functions, "Functions (HTTP Triggers)", "Azure Functions [Function]", "LoginFunction (POST /login), JwksFunction (GET /.well-known/jwks.json), HealthFunction (GET /health), RootFunction (GET / - redireciona pro Swagger UI) - todas anonimas. So traduzem HTTP <-> MediatR, zero logica de negocio aqui.")
+
+    Component(pipeline, "ValidationBehavior", "MediatR IPipelineBehavior", "Intercepta o LoginCommand. Executa FluentValidation e lanca ValidationException se invalido - mesmo pipeline do OficinaMecanica.")
+
+    Component(loginHandler, "LoginCommandHandler", "MediatR IRequestHandler", "Busca o usuario, verifica senha (hash) e status Ativo - MESMA mensagem de erro pros 3 casos de falha (usuario inexistente, inativo, senha errada), evitando user enumeration. Gera o token via ITokenService.")
+
+    Component(jwksHandler, "ObterJwksQueryHandler", "MediatR IRequestHandler", "So delega pra IJwksProvider - sem logica propria.")
+
+    Component(usuario, "Usuario (DDD)", "Domain Entity / AggregateRoot", "NomeUsuario, SenhaHash, Perfil, Ativo. AlterarSenha/Desativar encapsulam as invariantes - construtor recebe o hash da senha, nunca o texto puro (hashing e responsabilidade da Infrastructure).")
+
+    Component(repo, "UsuarioRepository", "EF Core / IUsuarioRepository", "Implementa a interface definida no dominio.")
+
+    Component(hasher, "BCryptPasswordHasher", "IPasswordHasher", "Hash e verificacao de senha via BCrypt.Net-Next.")
+
+    Component(tokenSvc, "KeyVaultTokenService / LocalRsaTokenService", "ITokenService", "Assina o JWT (RS256). Producao: CryptographyClient.SignDataAsync contra o Azure Key Vault, a chave privada nunca sai do vault. Dev local/testes: chave RSA efemera gerada em memoria, escolhida automaticamente quando KeyVault:Uri nao esta configurado.")
+
+    Component(jwksProvider, "KeyVaultJwksProvider / LocalRsaJwksProvider", "IJwksProvider", "Expoe a chave publica correspondente (mesmo par de chaves usado pra assinar, mesmo kid) no formato JWKS.")
+
+    Component(seed, "SeedAdminService", "Servico de startup", "Insere o admin inicial se a tabela Usuarios estiver vazia - idempotente, chamado a cada cold start do Program.cs, depois da migration automatica (so em desenvolvimento).")
+
+    Component(dbctx, "AppDbContext / IUnitOfWork", "Entity Framework Core 8", "Mesma estrutura do OficinaMecanica: incrementa Version (AggregateRoot) e publica Domain Events via IMediator apos SaveChangesAsync.")
+}
+
+Rel_D(admin, functions, "POST /login", "HTTPS")
+Rel_D(consumidores, functions, "GET /.well-known/jwks.json", "HTTPS")
+Rel_D(functions, middleware, "Middleware envolve toda invocacao")
+Rel_D(functions, pipeline, "Despacha LoginCommand", "IMediator.Send")
+Rel_D(pipeline, loginHandler, "Encaminha apos validacao")
+Rel_D(functions, jwksHandler, "Despacha ObterJwksQuery", "IMediator.Send")
+Rel_D(loginHandler, repo, "Busca usuario por nome")
+Rel_D(loginHandler, hasher, "Verifica a senha")
+Rel_D(loginHandler, tokenSvc, "Gera o token")
+Rel_D(jwksHandler, jwksProvider, "Busca a chave publica")
+Rel_R(repo, usuario, "Persiste e reconstroi")
+Rel_D(repo, dbctx, "Usa a transacao compartilhada")
+Rel_D(dbctx, db, "Le e escreve via EF Core", "SQL / TDS 1433")
+Rel(tokenSvc, keyvault, "Assina remotamente", "HTTPS")
+Rel(jwksProvider, keyvault, "Le a chave publica", "HTTPS")
+Rel_L(seed, repo, "Insere o admin inicial (idempotente, no startup)")
+
+@enduml
