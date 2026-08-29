@@ -70,3 +70,5 @@ coverage/
 *.temp
 *.swp
 *~
+
+relatorio-auditoria-seguranca.pdf

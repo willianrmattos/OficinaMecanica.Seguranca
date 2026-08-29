@@ -136,6 +136,41 @@ nunca tem pasta `infra/` propria. Deploy via zip (`Azure/functions-action`
 ou `func azure functionapp publish`), autenticado no Azure via OIDC (App
 Registration/Federated Credential proprios, federados pra este repo).
 
+## CI/CD
+
+`.github/workflows/ci.yml` — 2 jobs, mesmo espirito do CI do `OficinaMecanica`
+(OIDC, sem secret de longa duracao) mas adaptado pra deploy de Function App
+em vez de imagem+AKS:
+
+1. **build-and-test**: restore/build da solution inteira +
+   `Domain.Tests`/`Application.Tests` (rapidos, sem dependencia externa).
+   `Integration.Tests` fica de fora do CI de proposito - sobe Azure
+   Functions Core Tools (`func start`) + Azurite como processos reais e
+   precisa de um SQL Server de verdade pra migration (LocalDB local, ver
+   secao "Testes" acima) - portar isso pro runner ubuntu do GitHub Actions
+   exigiria trocar LocalDB por um container SQL Server + instalar o Core
+   Tools no runner, fora de escopo por ora. Roda local antes de dar push.
+2. **deploy** (so em push/dispatch na `main`): `dotnet publish` do projeto
+   Functions + `Azure/functions-action` **sem** `publish-profile` - o login
+   OIDC (`azure/login`) já deixa o contexto autenticado, e o Service
+   Principal do GitHub Actions so tem `Contributor` na propria Function App
+   (`OficinaMecanica.Infra/github_oidc_seguranca/main.tf`), suficiente pra
+   deploy via zip sem precisar de mais nada.
+
+**Pendente pra esse CI rodar de verdade** (nao depende de codigo, sao passos
+manuais de configuracao):
+- Criar o repositorio remoto `willianrmattos/OficinaMecanica.Seguranca` no
+  GitHub (a Federated Identity Credential ja espera esse nome exato,
+  `OficinaMecanica.Infra/github_oidc_seguranca/main.tf`) e dar push nele -
+  este repositorio segue com **zero commits** ate segunda ordem (ver secao
+  "Estado atual" do `CLAUDE.md` da raiz de `OficinaMecanica.Pos`).
+- Configurar as 3 `variables` do repositorio no GitHub (nao secrets - sao
+  so identificadores, nao sensiveis): `AZURE_CLIENT_ID` (valor de
+  `terraform output -raw seguranca_github_actions_client_id`, diferente do
+  `AZURE_CLIENT_ID` usado no repo `OficinaMecanica` - App Registration
+  proprio), `AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` (mesma assinatura
+  Azure, mesmo valor ja usado no `OficinaMecanica`).
+
 ## Agente Validador de Padroes
 
 `.claude/agents/pattern-validator.md` — subagente read-only (`Read, Grep,

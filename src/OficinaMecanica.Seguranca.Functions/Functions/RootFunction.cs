@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -23,8 +24,15 @@ public class RootFunction
     {
         if (string.IsNullOrEmpty(caminho))
         {
+            // Mesmo header X-Gateway-Prefix que o ServerBasePathDocumentFilter le - sem ele
+            // (acesso direto na Function, sem APIM) o redirect fica relativo a raiz do proprio
+            // host, sem prefixo nenhum, que tambem esta correto nesse caso.
+            var prefix = req.Headers.TryGetValues("X-Gateway-Prefix", out var valores)
+                ? valores.FirstOrDefault() ?? string.Empty
+                : string.Empty;
+
             var redirect = req.CreateResponse(HttpStatusCode.Redirect);
-            redirect.Headers.Add("Location", "/swagger/ui");
+            redirect.Headers.Add("Location", $"{prefix}/swagger/ui");
             return redirect;
         }
 
