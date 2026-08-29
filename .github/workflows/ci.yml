@@ -102,7 +102,7 @@ jobs:
       # input nao e passado, usa o contexto ja autenticado do passo acima (OIDC,
       # sem secret de longa duracao), igual ao az acr login/az aks get-credentials
       # do CI do OficinaMecanica. O Service Principal so tem "Contributor" na
-      # propria Function App (OficinaMecanica.Infra/github_oidc_seguranca/main.tf),
+      # propria Function App (OficinaMecanica.Infra/github_oidc_seguranca/main.tf).
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
         with:

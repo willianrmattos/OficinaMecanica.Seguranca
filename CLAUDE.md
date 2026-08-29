@@ -157,19 +157,17 @@ em vez de imagem+AKS:
    (`OficinaMecanica.Infra/github_oidc_seguranca/main.tf`), suficiente pra
    deploy via zip sem precisar de mais nada.
 
-**Pendente pra esse CI rodar de verdade** (nao depende de codigo, sao passos
-manuais de configuracao):
-- Criar o repositorio remoto `willianrmattos/OficinaMecanica.Seguranca` no
-  GitHub (a Federated Identity Credential ja espera esse nome exato,
-  `OficinaMecanica.Infra/github_oidc_seguranca/main.tf`) e dar push nele -
-  este repositorio segue com **zero commits** ate segunda ordem (ver secao
-  "Estado atual" do `CLAUDE.md` da raiz de `OficinaMecanica.Pos`).
-- Configurar as 3 `variables` do repositorio no GitHub (nao secrets - sao
-  so identificadores, nao sensiveis): `AZURE_CLIENT_ID` (valor de
-  `terraform output -raw seguranca_github_actions_client_id`, diferente do
-  `AZURE_CLIENT_ID` usado no repo `OficinaMecanica` - App Registration
-  proprio), `AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` (mesma assinatura
-  Azure, mesmo valor ja usado no `OficinaMecanica`).
+**Ja feito** (nao e mais pendente): o repositorio remoto
+`willianrmattos/OficinaMecanica.Seguranca` foi criado no GitHub (a
+Federated Identity Credential ja esperava esse nome exato,
+`OficinaMecanica.Infra/github_oidc_seguranca/main.tf`) e recebeu o push
+inicial - este repositorio ja tem commits reais. As 3 `variables` do
+repositorio no GitHub (`AZURE_CLIENT_ID` - valor de `terraform output -raw
+seguranca_github_actions_client_id`, diferente do `AZURE_CLIENT_ID` usado
+no repo `OficinaMecanica`; `AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` -
+mesma assinatura Azure ja usada no `OficinaMecanica`) ja estao configuradas
+- confirmado rodando o CI de ponta a ponta com sucesso (build+test + login
+OIDC + deploy real na Function App).
 
 ## Agente Validador de Padroes
 
