@@ -65,7 +65,7 @@ public class KeyVaultTokenService : ITokenService
         var payload = new
         {
             sub = usuario.Id.ToString(),
-            name = usuario.NomeUsuario,
+            name = usuario.Cpf.Numero,
             role = usuario.Perfil.ToString(),
             jti = Guid.NewGuid().ToString(),
             iat = agora.ToUnixTimeSeconds(),

@@ -23,7 +23,7 @@ Container_Boundary(seguranca, "OficinaMecanica.Seguranca (.NET 8 / Azure Functio
 
     Component(jwksHandler, "ObterJwksQueryHandler", "MediatR IRequestHandler", "So delega pra IJwksProvider - sem logica propria.")
 
-    Component(usuario, "Usuario (DDD)", "Domain Entity / AggregateRoot", "NomeUsuario, SenhaHash, Perfil, Ativo. AlterarSenha/Desativar encapsulam as invariantes - construtor recebe o hash da senha, nunca o texto puro (hashing e responsabilidade da Infrastructure).")
+    Component(usuario, "Usuario (DDD)", "Domain Entity / AggregateRoot", "Cpf (Value Object), SenhaHash, Perfil, Ativo. AlterarSenha/Desativar encapsulam as invariantes - construtor recebe o hash da senha, nunca o texto puro (hashing e responsabilidade da Infrastructure).")
 
     Component(repo, "UsuarioRepository", "EF Core / IUsuarioRepository", "Implementa a interface definida no dominio.")
 

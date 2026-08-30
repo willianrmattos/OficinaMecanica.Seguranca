@@ -14,10 +14,10 @@ public class UsuarioRepository : IUsuarioRepository
         _context = context;
     }
 
-    public async Task<Usuario?> ObterPorNomeUsuarioAsync(string nomeUsuario, CancellationToken cancellationToken = default)
+    public async Task<Usuario?> ObterPorCpfAsync(string cpf, CancellationToken cancellationToken = default)
     {
         return await _context.Usuarios
-            .FirstOrDefaultAsync(u => u.NomeUsuario == nomeUsuario, cancellationToken);
+            .FirstOrDefaultAsync(u => u.Cpf.Numero == cpf, cancellationToken);
     }
 
     public async Task<bool> ExisteAlgumAsync(CancellationToken cancellationToken = default)

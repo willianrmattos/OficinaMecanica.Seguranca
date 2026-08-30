@@ -24,7 +24,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponseDt
 
     public async Task<LoginResponseDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var usuario = await _usuarioRepository.ObterPorNomeUsuarioAsync(request.NomeUsuario, cancellationToken);
+        var usuario = await _usuarioRepository.ObterPorCpfAsync(request.Cpf, cancellationToken);
 
         // Mesma mensagem pros tres casos (usuario inexistente, inativo ou senha errada) de proposito,
         // pra nao revelar se o usuario existe ou nao (evita user enumeration).

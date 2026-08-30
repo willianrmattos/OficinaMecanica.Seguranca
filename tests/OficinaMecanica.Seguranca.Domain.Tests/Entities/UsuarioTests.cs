@@ -2,6 +2,7 @@ using FluentAssertions;
 using OficinaMecanica.Seguranca.Domain.Entities;
 using OficinaMecanica.Seguranca.Domain.Enums;
 using OficinaMecanica.Seguranca.Domain.Exceptions;
+using OficinaMecanica.Seguranca.Domain.ValueObjects;
 using OficinaMecanica.Seguranca.Tests.Common.Builders;
 
 namespace OficinaMecanica.Seguranca.Domain.Tests.Entities;
@@ -12,12 +13,12 @@ public class UsuarioTests
     public void Construtor_ComDadosValidos_DeveCriarUsuario()
     {
         var usuario = new UsuarioBuilder()
-            .ComNomeUsuario("admin")
+            .ComCpf("52998224725")
             .ComSenhaHash("hash-da-senha")
             .ComPerfil(PerfilUsuario.Admin)
             .Build();
 
-        usuario.NomeUsuario.Should().Be("admin");
+        usuario.Cpf.Numero.Should().Be("52998224725");
         usuario.SenhaHash.Should().Be("hash-da-senha");
         usuario.Perfil.Should().Be(PerfilUsuario.Admin);
         usuario.Ativo.Should().BeTrue();
@@ -25,16 +26,16 @@ public class UsuarioTests
     }
 
     [Fact]
-    public void Construtor_SemNomeUsuario_DeveLancarExcecao()
+    public void Construtor_ComCpfInvalido_DeveLancarExcecao()
     {
-        var act = () => new Usuario("", "hash-da-senha", PerfilUsuario.Admin);
-        act.Should().Throw<DomainException>().WithMessage("*nome de usuário*obrigatório*");
+        var act = () => new Usuario(Cpf.Criar("123"), "hash-da-senha", PerfilUsuario.Admin);
+        act.Should().Throw<DomainException>().WithMessage("*CPF inválido*");
     }
 
     [Fact]
     public void Construtor_SemSenhaHash_DeveLancarExcecao()
     {
-        var act = () => new Usuario("admin", "", PerfilUsuario.Admin);
+        var act = () => new Usuario(Cpf.Criar("52998224725"), "", PerfilUsuario.Admin);
         act.Should().Throw<DomainException>().WithMessage("*hash da senha*obrigatório*");
     }
 
