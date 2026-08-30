@@ -27,7 +27,7 @@ public class AutenticacaoFluxoTests
     {
         var response = await _client.PostAsJsonAsync("/login", new
         {
-            nomeUsuario = FunctionHostFixture.SeedAdminNomeUsuario,
+            cpf = FunctionHostFixture.SeedAdminCpf,
             senha = FunctionHostFixture.SeedAdminSenhaInicial
         });
 
@@ -44,7 +44,7 @@ public class AutenticacaoFluxoTests
     {
         var response = await _client.PostAsJsonAsync("/login", new
         {
-            nomeUsuario = FunctionHostFixture.SeedAdminNomeUsuario,
+            cpf = FunctionHostFixture.SeedAdminCpf,
             senha = "senha-completamente-errada"
         });
 
@@ -81,7 +81,7 @@ public class AutenticacaoFluxoTests
     {
         var loginResponse = await _client.PostAsJsonAsync("/login", new
         {
-            nomeUsuario = FunctionHostFixture.SeedAdminNomeUsuario,
+            cpf = FunctionHostFixture.SeedAdminCpf,
             senha = FunctionHostFixture.SeedAdminSenhaInicial
         });
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -124,6 +124,6 @@ public class AutenticacaoFluxoTests
 
         handler.ValidateToken(token, validationParameters, out var securityToken);
         var jwt = (JwtSecurityToken)securityToken;
-        jwt.Claims.Should().Contain(c => c.Type == "name" && c.Value == FunctionHostFixture.SeedAdminNomeUsuario);
+        jwt.Claims.Should().Contain(c => c.Type == "name" && c.Value == FunctionHostFixture.SeedAdminCpf);
     }
 }

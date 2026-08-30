@@ -66,12 +66,15 @@ pra `/.well-known/jwks.json` ficar exatamente nesse path convencional.)
 
 - **Anti user enumeration**: falha de login (usuario inexistente, inativo ou
   senha errada) sempre retorna a mesma mensagem (`"Usuário ou senha
-  inválidos."`, HTTP 401) — nao da pra descobrir se um nome de usuario
-  existe so pela resposta (`LoginCommandHandler.cs`).
+  inválidos."`, HTTP 401) — nao da pra descobrir se um CPF esta cadastrado
+  so pela resposta (`LoginCommandHandler.cs`).
+- **Login por CPF**: o `Usuario` e identificado pelo CPF (Value Object
+  `Cpf`, com validacao de checksum real - nao um campo de texto livre),
+  nao por um nome de usuario arbitrario.
 - **Usuario admin via seed idempotente**: no cold start da Function,
   `SeedAdminService` verifica se ja existe algum usuario na tabela; se nao
-  existir, cria 1 admin com `NomeUsuario`/senha vindos de
-  `SeedAdmin:NomeUsuario`/`SeedAdmin:SenhaInicial` (config ou Key Vault, ver
+  existir, cria 1 admin com `Cpf`/senha vindos de
+  `SeedAdmin:Cpf`/`SeedAdmin:SenhaInicial` (config ou Key Vault, ver
   `CLAUDE.md`). Roda toda vez que o processo sobe, mas so tem efeito uma vez
   — sem CRUD de usuarios ainda (fora do escopo do MVP).
 - **Token RS256**: `LoginResponseDto` retorna `token` (JWT), `tipo`
@@ -102,7 +105,7 @@ docker compose up -d
 ```
 
 - `GET http://localhost:7071/health`
-- `POST http://localhost:7071/login` (body `{"nomeUsuario":"...","senha":"..."}`)
+- `POST http://localhost:7071/login` (body `{"cpf":"...","senha":"..."}`)
 - `GET http://localhost:7071/.well-known/jwks.json`
 - `GET http://localhost:7071/swagger/ui` — Swagger UI (mesmo `routePrefix` vazio via `func start`, so muda a porta se nao for a padrao)
 - `GET http://localhost:7071/` — redireciona pro Swagger UI acima

@@ -9,7 +9,7 @@
         "JwtSettings:Issuer": "<issuer-do-token>",
         "JwtSettings:Audience": "<audience-do-token>",
         "JwtSettings:ExpiracaoMinutos": "60",
-        "SeedAdmin:NomeUsuario": "<usuario-admin-inicial>",
+        "SeedAdmin:Cpf": "<cpf-do-admin-inicial>",
         "SeedAdmin:SenhaInicial": "<senha-admin-inicial>"
     }
 }

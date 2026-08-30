@@ -12,7 +12,7 @@ using OficinaMecanica.Seguranca.Infrastructure.Data;
 namespace OficinaMecanica.Seguranca.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260827181125_InitialCreate")]
+    [Migration("20260830140434_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -37,11 +37,6 @@ namespace OficinaMecanica.Seguranca.Infrastructure.Data.Migrations
                     b.Property<DateTime>("DataCriacao")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("NomeUsuario")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<int>("Perfil")
                         .HasColumnType("int");
 
@@ -56,10 +51,35 @@ namespace OficinaMecanica.Seguranca.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NomeUsuario")
-                        .IsUnique();
-
                     b.ToTable("Usuarios", (string)null);
+                });
+
+            modelBuilder.Entity("OficinaMecanica.Seguranca.Domain.Entities.Usuario", b =>
+                {
+                    b.OwnsOne("OficinaMecanica.Seguranca.Domain.ValueObjects.Cpf", "Cpf", b1 =>
+                        {
+                            b1.Property<Guid>("UsuarioId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Numero")
+                                .IsRequired()
+                                .HasMaxLength(11)
+                                .HasColumnType("nvarchar(11)")
+                                .HasColumnName("Cpf");
+
+                            b1.HasKey("UsuarioId");
+
+                            b1.HasIndex("Numero")
+                                .IsUnique();
+
+                            b1.ToTable("Usuarios");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UsuarioId");
+                        });
+
+                    b.Navigation("Cpf")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

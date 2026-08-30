@@ -32,7 +32,7 @@ verificar, diga que nao verificou.
 ### a) Idioma: dominio em portugues, arquitetura em ingles
 
 - Entidades, propriedades, enums e mensagens de excecao/erro devem estar em
-  portugues. Exemplos existentes pra calibrar: `Usuario`, `NomeUsuario`,
+  portugues. Exemplos existentes pra calibrar: `Usuario`, `Cpf`,
   `SenhaHash`, `Perfil`, `Ativo`, enum `PerfilUsuario` (`Admin`, etc.),
   `DomainException`/`AutenticacaoException` com mensagens em portugues.
 - Namespaces, nomes de camada, interfaces genericas e termos de design

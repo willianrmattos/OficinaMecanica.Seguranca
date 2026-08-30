@@ -27,11 +27,11 @@ public class LoginCommandHandlerTests
     [Fact]
     public async Task Handle_ComCredenciaisValidas_DeveRetornarToken()
     {
-        var usuario = new UsuarioBuilder().ComNomeUsuario("admin").ComSenhaHash("hash-valido").Build();
-        var command = new LoginCommand("admin", "senha-correta");
+        var usuario = new UsuarioBuilder().ComCpf("52998224725").ComSenhaHash("hash-valido").Build();
+        var command = new LoginCommand("52998224725", "senha-correta");
 
         _usuarioRepositoryMock
-            .Setup(r => r.ObterPorNomeUsuarioAsync("admin", It.IsAny<CancellationToken>()))
+            .Setup(r => r.ObterPorCpfAsync("52998224725", It.IsAny<CancellationToken>()))
             .ReturnsAsync(usuario);
         _passwordHasherMock
             .Setup(h => h.Verificar("senha-correta", "hash-valido"))
@@ -54,10 +54,10 @@ public class LoginCommandHandlerTests
     [Fact]
     public async Task Handle_ComUsuarioNaoEncontrado_DeveLancarExcecao()
     {
-        var command = new LoginCommand("inexistente", "qualquer-senha");
+        var command = new LoginCommand("11111111111", "qualquer-senha");
 
         _usuarioRepositoryMock
-            .Setup(r => r.ObterPorNomeUsuarioAsync("inexistente", It.IsAny<CancellationToken>()))
+            .Setup(r => r.ObterPorCpfAsync("11111111111", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Usuario?)null);
 
         var act = () => _handler.Handle(command, CancellationToken.None);
@@ -68,12 +68,12 @@ public class LoginCommandHandlerTests
     [Fact]
     public async Task Handle_ComUsuarioInativo_DeveLancarExcecao()
     {
-        var usuario = new UsuarioBuilder().ComNomeUsuario("admin").ComSenhaHash("hash-valido").Build();
+        var usuario = new UsuarioBuilder().ComCpf("52998224725").ComSenhaHash("hash-valido").Build();
         usuario.Desativar();
-        var command = new LoginCommand("admin", "senha-correta");
+        var command = new LoginCommand("52998224725", "senha-correta");
 
         _usuarioRepositoryMock
-            .Setup(r => r.ObterPorNomeUsuarioAsync("admin", It.IsAny<CancellationToken>()))
+            .Setup(r => r.ObterPorCpfAsync("52998224725", It.IsAny<CancellationToken>()))
             .ReturnsAsync(usuario);
         _passwordHasherMock
             .Setup(h => h.Verificar("senha-correta", "hash-valido"))
@@ -87,11 +87,11 @@ public class LoginCommandHandlerTests
     [Fact]
     public async Task Handle_ComSenhaIncorreta_DeveLancarExcecao()
     {
-        var usuario = new UsuarioBuilder().ComNomeUsuario("admin").ComSenhaHash("hash-valido").Build();
-        var command = new LoginCommand("admin", "senha-errada");
+        var usuario = new UsuarioBuilder().ComCpf("52998224725").ComSenhaHash("hash-valido").Build();
+        var command = new LoginCommand("52998224725", "senha-errada");
 
         _usuarioRepositoryMock
-            .Setup(r => r.ObterPorNomeUsuarioAsync("admin", It.IsAny<CancellationToken>()))
+            .Setup(r => r.ObterPorCpfAsync("52998224725", It.IsAny<CancellationToken>()))
             .ReturnsAsync(usuario);
         _passwordHasherMock
             .Setup(h => h.Verificar("senha-errada", "hash-valido"))

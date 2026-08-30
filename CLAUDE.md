@@ -42,7 +42,7 @@ Domain, implementacao na Infrastructure).
 ## Convencoes
 
 - **Idioma do dominio**: entidades, propriedades, enums, mensagens de erro
-  em portugues (ex.: `Usuario`, `NomeUsuario`, `PerfilUsuario.Admin`)
+  em portugues (ex.: `Usuario`, `Cpf`, `PerfilUsuario.Admin`)
 - **Idioma da arquitetura**: namespaces, design patterns, interfaces
   genericas, nomes de camada em ingles
 

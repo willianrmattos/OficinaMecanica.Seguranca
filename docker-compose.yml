@@ -18,7 +18,7 @@ services:
       JwtSettings__Issuer: "OficinaMecanica.Seguranca"
       JwtSettings__Audience: "OficinaMecanica.Client"
       JwtSettings__ExpiracaoMinutos: "60"
-      SeedAdmin__NomeUsuario: "${SEED_ADMIN_USUARIO}"
+      SeedAdmin__Cpf: "${SEED_ADMIN_CPF}"
       SeedAdmin__SenhaInicial: "${SEED_ADMIN_SENHA}"
     ports:
       - "7071:80"
