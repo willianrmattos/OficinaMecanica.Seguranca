@@ -102,6 +102,15 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      # Database.Migrate() em Program.cs so roda quando
+      # AZURE_FUNCTIONS_ENVIRONMENT=Development (nunca em producao real) -
+      # esse step aplica as migrations pendentes de verdade.
+      - name: Aplicar migrations
+        run: |
+          dotnet tool install --global dotnet-ef --version 8.*
+          export ConnectionStrings__DefaultConnection=$(az keyvault secret show --vault-name kvfiap --name seguranca-sql-connection-string --query value -o tsv)
+          dotnet ef database update --project src/OficinaMecanica.Seguranca.Infrastructure --startup-project src/OficinaMecanica.Seguranca.Functions
+
       # Sem publish-profile de proposito - a Azure/functions-action, quando esse
       # input nao e passado, usa o contexto ja autenticado do passo acima (OIDC,
       # sem secret de longa duracao), igual ao az acr login/az aks get-credentials
