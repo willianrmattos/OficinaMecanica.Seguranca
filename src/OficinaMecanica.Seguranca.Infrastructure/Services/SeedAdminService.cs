@@ -2,6 +2,7 @@ using OficinaMecanica.Seguranca.Application.Interfaces;
 using OficinaMecanica.Seguranca.Domain.Entities;
 using OficinaMecanica.Seguranca.Domain.Enums;
 using OficinaMecanica.Seguranca.Domain.Interfaces;
+using OficinaMecanica.Seguranca.Domain.ValueObjects;
 using Microsoft.Extensions.Configuration;
 
 namespace OficinaMecanica.Seguranca.Infrastructure.Services;
@@ -31,14 +32,14 @@ public class SeedAdminService
         if (await _usuarioRepository.ExisteAlgumAsync(cancellationToken))
             return;
 
-        var nomeUsuario = _configuration["SeedAdmin:NomeUsuario"];
+        var cpf = _configuration["SeedAdmin:Cpf"];
         var senhaInicial = _configuration["SeedAdmin:SenhaInicial"];
 
-        if (string.IsNullOrWhiteSpace(nomeUsuario) || string.IsNullOrWhiteSpace(senhaInicial))
+        if (string.IsNullOrWhiteSpace(cpf) || string.IsNullOrWhiteSpace(senhaInicial))
             throw new InvalidOperationException(
-                "As configuracoes 'SeedAdmin:NomeUsuario' e 'SeedAdmin:SenhaInicial' sao obrigatorias para criar o usuario administrador inicial.");
+                "As configuracoes 'SeedAdmin:Cpf' e 'SeedAdmin:SenhaInicial' sao obrigatorias para criar o usuario administrador inicial.");
 
-        var usuario = new Usuario(nomeUsuario, _passwordHasher.Hash(senhaInicial), PerfilUsuario.Admin);
+        var usuario = new Usuario(Cpf.Criar(cpf), _passwordHasher.Hash(senhaInicial), PerfilUsuario.Admin);
 
         await _usuarioRepository.AdicionarAsync(usuario, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

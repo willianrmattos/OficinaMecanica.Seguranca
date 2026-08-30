@@ -1,12 +1,13 @@
 using OficinaMecanica.Seguranca.Domain.Common;
 using OficinaMecanica.Seguranca.Domain.Enums;
 using OficinaMecanica.Seguranca.Domain.Exceptions;
+using OficinaMecanica.Seguranca.Domain.ValueObjects;
 
 namespace OficinaMecanica.Seguranca.Domain.Entities;
 
 public class Usuario : AggregateRoot
 {
-    public string NomeUsuario { get; private set; }
+    public Cpf Cpf { get; private set; }
     public string SenhaHash { get; private set; }
     public PerfilUsuario Perfil { get; private set; }
     public bool Ativo { get; private set; }
@@ -14,15 +15,12 @@ public class Usuario : AggregateRoot
 
     private Usuario() { } // EF Core
 
-    public Usuario(string nomeUsuario, string senhaHash, PerfilUsuario perfil)
+    public Usuario(Cpf cpf, string senhaHash, PerfilUsuario perfil)
     {
-        if (string.IsNullOrWhiteSpace(nomeUsuario))
-            throw new DomainException("O nome de usuário é obrigatório.");
-
         if (string.IsNullOrWhiteSpace(senhaHash))
             throw new DomainException("O hash da senha é obrigatório.");
 
-        NomeUsuario = nomeUsuario;
+        Cpf = cpf ?? throw new DomainException("O CPF do usuário é obrigatório.");
         SenhaHash = senhaHash;
         Perfil = perfil;
         Ativo = true;

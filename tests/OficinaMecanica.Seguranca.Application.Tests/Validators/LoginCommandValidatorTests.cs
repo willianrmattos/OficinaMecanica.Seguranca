@@ -10,24 +10,24 @@ public class LoginCommandValidatorTests
     [Fact]
     public async Task Validate_ComDadosValidos_DeveSerValido()
     {
-        var command = new LoginCommand("admin", "senha-123");
+        var command = new LoginCommand("52998224725", "senha-123");
         var result = await _validator.ValidateAsync(command);
         result.IsValid.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Validate_SemNomeUsuario_DeveSerInvalido()
+    public async Task Validate_SemCpf_DeveSerInvalido()
     {
         var command = new LoginCommand("", "senha-123");
         var result = await _validator.ValidateAsync(command);
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "NomeUsuario");
+        result.Errors.Should().Contain(e => e.PropertyName == "Cpf");
     }
 
     [Fact]
     public async Task Validate_SemSenha_DeveSerInvalido()
     {
-        var command = new LoginCommand("admin", "");
+        var command = new LoginCommand("52998224725", "");
         var result = await _validator.ValidateAsync(command);
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Senha");

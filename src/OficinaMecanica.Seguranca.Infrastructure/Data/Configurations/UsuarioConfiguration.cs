@@ -11,11 +11,11 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         builder.ToTable("Usuarios");
         builder.HasKey(u => u.Id);
 
-        builder.Property(u => u.NomeUsuario)
-            .IsRequired()
-            .HasMaxLength(100);
-
-        builder.HasIndex(u => u.NomeUsuario).IsUnique();
+        builder.OwnsOne(u => u.Cpf, c =>
+        {
+            c.Property(p => p.Numero).HasColumnName("Cpf").IsRequired().HasMaxLength(11);
+            c.HasIndex(p => p.Numero).IsUnique();
+        });
 
         builder.Property(u => u.SenhaHash)
             .IsRequired()

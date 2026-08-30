@@ -31,7 +31,7 @@ public class FunctionHostFixture : IAsyncLifetime
     private const string MasterConnectionString =
         "Server=(localdb)\\MSSQLLocalDB;Trusted_Connection=True;TrustServerCertificate=True;";
 
-    public const string SeedAdminNomeUsuario = "admin.teste";
+    public const string SeedAdminCpf = "52998224725";
     public const string SeedAdminSenhaInicial = "SenhaForte!Teste123";
     public const string JwtIssuer = "seguranca-integration-tests";
     public const string JwtAudience = "seguranca-integration-tests-audience";
@@ -247,7 +247,7 @@ END";
         processInfo.EnvironmentVariables["JwtSettings__Issuer"] = JwtIssuer;
         processInfo.EnvironmentVariables["JwtSettings__Audience"] = JwtAudience;
         processInfo.EnvironmentVariables["JwtSettings__ExpiracaoMinutos"] = JwtExpiracaoMinutos.ToString();
-        processInfo.EnvironmentVariables["SeedAdmin__NomeUsuario"] = SeedAdminNomeUsuario;
+        processInfo.EnvironmentVariables["SeedAdmin__Cpf"] = SeedAdminCpf;
         processInfo.EnvironmentVariables["SeedAdmin__SenhaInicial"] = SeedAdminSenhaInicial;
 
         var process = Process.Start(processInfo)

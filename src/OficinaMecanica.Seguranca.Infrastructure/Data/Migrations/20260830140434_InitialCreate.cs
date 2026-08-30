@@ -16,7 +16,7 @@ namespace OficinaMecanica.Seguranca.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    NomeUsuario = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Cpf = table.Column<string>(type: "nvarchar(11)", maxLength: 11, nullable: false),
                     SenhaHash = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Perfil = table.Column<int>(type: "int", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: false),
@@ -29,9 +29,9 @@ namespace OficinaMecanica.Seguranca.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Usuarios_NomeUsuario",
+                name: "IX_Usuarios_Cpf",
                 table: "Usuarios",
-                column: "NomeUsuario",
+                column: "Cpf",
                 unique: true);
         }
 
