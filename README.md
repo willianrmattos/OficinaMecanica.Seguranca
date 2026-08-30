@@ -31,6 +31,26 @@ Toda a infraestrutura deste servico e provisionada em
 centraliza o Terraform de todo o ecossistema) — este repositorio nao tem
 pasta `infra/` propria.
 
+## Ambiente de Homologação
+
+A branch `main` (produção) e a branch `release` (homologação) disparam
+deploy automático **pra a mesma Function App** (`funcsegurancafiap`) — não
+há um ambiente de homologação fisicamente isolado (sem segunda Function
+App, sem banco de dados separado).
+
+Essa é uma limitação real de recurso, não uma escolha de melhor prática: o
+cluster/assinatura roda numa cota gratuita/limitada (Azure for Students),
+sem espaço pra manter uma segunda instância completa da infraestrutura só
+pra homologação. Num cenário real de produção, o recomendável seria
+infraestrutura dedicada por ambiente (Function App e banco de dados
+próprios por ambiente — o tier Consumption usado aqui, aliás, não suporta
+[deployment slots](https://learn.microsoft.com/azure/azure-functions/functions-deployment-slots),
+que seria a forma nativa do Azure de resolver isso sem duplicar recursos),
+pra eliminar qualquer risco de um deploy de teste afetar produção de
+verdade. Como este é um projeto de estudo, a separação demonstrada aqui é
+só a nível de **processo**: branch protegida, PR obrigatório, deploy
+automático disparado por cada branch — não isolamento de infraestrutura.
+
 ## Endpoints
 
 - `POST /login` — autentica e retorna um JWT RS256
