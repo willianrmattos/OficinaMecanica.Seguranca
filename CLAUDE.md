@@ -150,12 +150,19 @@ em vez de imagem+AKS:
    secao "Testes" acima) - portar isso pro runner ubuntu do GitHub Actions
    exigiria trocar LocalDB por um container SQL Server + instalar o Core
    Tools no runner, fora de escopo por ora. Roda local antes de dar push.
-2. **deploy** (so em push/dispatch na `main`): `dotnet publish` do projeto
-   Functions + `Azure/functions-action` **sem** `publish-profile` - o login
-   OIDC (`azure/login`) já deixa o contexto autenticado, e o Service
-   Principal do GitHub Actions so tem `Contributor` na propria Function App
-   (`OficinaMecanica.Infra/github_oidc_seguranca/main.tf`), suficiente pra
-   deploy via zip sem precisar de mais nada.
+2. **deploy** (so em push/dispatch na `main` OU `release` - homologacao e
+   producao publicam na mesma Function App, ver secao "Ambiente de
+   Homologacao" no README): `dotnet publish` do projeto Functions, aplica
+   as migrations pendentes (`dotnet ef database update`, connection string
+   buscada do Key Vault via `az keyvault secret show` - unico mecanismo que
+   aplica schema novo em producao, ja que `Database.Migrate()` em
+   `Program.cs` so roda com `AZURE_FUNCTIONS_ENVIRONMENT=Development`) e
+   entao `Azure/functions-action` **sem** `publish-profile` - o login OIDC
+   (`azure/login`) já deixa o contexto autenticado. O Service Principal do
+   GitHub Actions tem `Contributor` na propria Function App e `Key Vault
+   Secrets User` no Key Vault (`OficinaMecanica.Infra/github_oidc_seguranca/main.tf`),
+   suficiente pra deploy via zip + ler a connection string sem precisar de
+   mais nada.
 
 **Ja feito** (nao e mais pendente): o repositorio remoto
 `willianrmattos/OficinaMecanica.Seguranca` foi criado no GitHub (a
