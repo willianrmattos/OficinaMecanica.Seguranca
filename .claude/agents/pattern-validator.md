@@ -117,7 +117,7 @@ nenhuma outra camada).
 - So comente o **porque** (motivacao, trade-off, coisa contraintuitiva) —
   nao comente o **o que** o codigo faz quando isso ja e obvio lendo o
   proprio codigo (ex. `// busca o usuario` em cima de
-  `var usuario = await _repo.ObterPorNomeAsync(nome)` e redundante e deve
+  `var usuario = await _repo.ObterPorCpfAsync(cpf)` e redundante e deve
   ser sinalizado).
 - Sinalize qualquer comentario em segunda pessoa, e qualquer comentario
   puramente descritivo do "o que" sem agregar o "porque".

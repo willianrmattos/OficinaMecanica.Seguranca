@@ -17,6 +17,19 @@ hardcoded em config).
 | C4 Nivel 1 - Contexto do sistema | [docs/c4-nivel1-contexto.puml](docs/c4-nivel1-contexto.puml) |
 | C4 Nivel 2 - Containers | [docs/c4-nivel2-container.puml](docs/c4-nivel2-container.puml) |
 | C4 Nivel 3 - Componentes | [docs/c4-nivel3-componente.puml](docs/c4-nivel3-componente.puml) |
+| Diagrama de Sequencia (fluxo de autenticacao) | [docs/diagramas/diagrama-de-sequencia.jpg](docs/diagramas/diagrama-de-sequencia.jpg) |
+
+## RFCs (decisoes de "por que essa direcao")
+
+| RFC | Titulo |
+|-----|--------|
+| 0001 | [Estrategia de autenticacao (JWT RS256/JWKS via servico dedicado)](docs/rfc/0001-estrategia-de-autenticacao.md) |
+
+## ADRs (decisoes tecnicas pontuais)
+
+| ADR | Titulo |
+|-----|--------|
+| 0001 | [Function App Consumption sem deployment slots](docs/adr/0001-function-app-consumption-sem-slots.md) |
 
 ## Estrutura
 
@@ -51,6 +64,30 @@ verdade. Como este é um projeto de estudo, a separação demonstrada aqui é
 só a nível de **processo**: branch protegida, PR obrigatório, deploy
 automático disparado por cada branch — não isolamento de infraestrutura.
 
+## CI/CD
+
+O deploy e automatizado via GitHub Actions
+([.github/workflows/ci.yml](.github/workflows/ci.yml)), em 2 jobs
+sequenciais. Roda automaticamente em todo push/PR pras branches `main`
+(producao) e `release` (homologacao - ver
+[Ambiente de Homologacao](#ambiente-de-homologação)), ou sob demanda pelo
+botao **Run workflow** na aba *Actions* (`workflow_dispatch`).
+
+| Job | Quando roda | O que faz |
+|-----|-------------|-----------|
+| `build-and-test` | Todo push, PR ou disparo manual | Restore, build, testes Domain + Application |
+| `deploy` | So em push direto na `main`/`release` ou disparo manual (nao em PR) | Publica o projeto Functions, autentica no Azure (OIDC), aplica migrations pendentes (`dotnet ef database update`, connection string do Key Vault) e faz deploy via zip (`Azure/functions-action`) na mesma Function App (`funcsegurancafiap`) |
+
+**Autenticacao sem secrets de longa duracao**: o job `deploy` autentica via
+**OIDC** (`OficinaMecanica.Infra/github_oidc_seguranca/`) - Federated
+Identity Credential restrita a `ref:refs/heads/main` e
+`ref:refs/heads/release`, sem client secret armazenado no repositorio.
+
+**Migracao aplicada explicitamente no CI**: `Program.cs` so roda
+`Database.Migrate()` automaticamente quando `AZURE_FUNCTIONS_ENVIRONMENT=
+Development` (nunca em producao real) - o step `Aplicar migrations` do
+`ci.yml` e o unico mecanismo que aplica schema novo no Azure.
+
 ## Endpoints
 
 - `POST /login` — autentica e retorna um JWT RS256
@@ -61,6 +98,11 @@ automático disparado por cada branch — não isolamento de infraestrutura.
 
 (Sem prefixo `/api` — `host.json` define `routePrefix: ""` de proposito,
 pra `/.well-known/jwks.json` ficar exatamente nesse path convencional.)
+
+**Em producao**, o acesso e via APIM (nao direto no hostname da Function
+App): https://apimfiap.azure-api.net/segurancaserver/swagger/ui (ver
+[API Gateway](../OficinaMecanica.Infra/README.md#api-gateway) no
+`OficinaMecanica.Infra`).
 
 ## Regras de Negocio
 
