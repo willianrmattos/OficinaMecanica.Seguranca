@@ -9,23 +9,29 @@ Extraido do monolito [OficinaMecanica](../OficinaMecanica), que ate entao
 tinha seu proprio `TokenService`/`AuthController` (JWT simetrico, 1 admin
 hardcoded em config).
 
-## Diagramas
+## Documentacao
+
+A pasta `docs/` e organizada em `adr/` (decisoes tecnicas pontuais), `rfc/`
+(propostas de direcao), `c4/` (modelo C4, niveis 1 a 3) e `diagramas/`
+(demais diagramas) — indice em [docs/README.md](docs/README.md).
+
+### Diagramas
 
 | Documento | Arquivo |
 |-----------|---------|
-| Clean Architecture (camadas e dependencias) | [docs/clean-architecture.puml](docs/clean-architecture.puml) |
-| C4 Nivel 1 - Contexto do sistema | [docs/c4-nivel1-contexto.puml](docs/c4-nivel1-contexto.puml) |
-| C4 Nivel 2 - Containers | [docs/c4-nivel2-container.puml](docs/c4-nivel2-container.puml) |
-| C4 Nivel 3 - Componentes | [docs/c4-nivel3-componente.puml](docs/c4-nivel3-componente.puml) |
+| Clean Architecture (camadas e dependencias) | [docs/diagramas/clean-architecture.puml](docs/diagramas/clean-architecture.puml) |
+| C4 Nivel 1 - Contexto do sistema | [docs/c4/c4-nivel1-contexto.puml](docs/c4/c4-nivel1-contexto.puml) |
+| C4 Nivel 2 - Containers | [docs/c4/c4-nivel2-container.puml](docs/c4/c4-nivel2-container.puml) |
+| C4 Nivel 3 - Componentes | [docs/c4/c4-nivel3-componente.puml](docs/c4/c4-nivel3-componente.puml) |
 | Diagrama de Sequencia (fluxo de autenticacao) | [docs/diagramas/diagrama-de-sequencia.jpg](docs/diagramas/diagrama-de-sequencia.jpg) |
 
-## RFCs (decisoes de "por que essa direcao")
+### RFCs (decisoes de "por que essa direcao")
 
 | RFC | Titulo |
 |-----|--------|
 | 0001 | [Estrategia de autenticacao (JWT RS256/JWKS via servico dedicado)](docs/rfc/0001-estrategia-de-autenticacao.md) |
 
-## ADRs (decisoes tecnicas pontuais)
+### ADRs (decisoes tecnicas pontuais)
 
 | ADR | Titulo |
 |-----|--------|

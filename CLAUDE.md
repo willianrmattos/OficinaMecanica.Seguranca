@@ -31,6 +31,13 @@ tests/
   OficinaMecanica.Seguranca.Application.Tests/  # Moq
   OficinaMecanica.Seguranca.Integration.Tests/  # ver secao "Testes" abaixo
   OficinaMecanica.Seguranca.Tests.Common/       # Builders com Bogus (UsuarioBuilder)
+docs/
+  README.md                                     # indice da pasta
+  adr/                                          # decisoes tecnicas pontuais (ADR)
+  rfc/                                          # propostas de direcao (RFC)
+  c4/                                           # modelo C4: c4-nivel1-contexto, c4-nivel2-container,
+                                                # c4-nivel3-componente (.puml)
+  diagramas/                                    # clean-architecture.puml e diagrama-de-sequencia.jpg
 ```
 
 Mesmos principios do `OficinaMecanica`: Clean Architecture (Domain ->
