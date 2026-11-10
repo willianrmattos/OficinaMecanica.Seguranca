@@ -14,7 +14,7 @@
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.10.0" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.34" />
     <!-- Dependencias transitivas do EntityFrameworkCore.SqlServer 8.0.0 que chegam em versoes com vulnerabilidade
          (Microsoft.Data.SqlClient 5.1.1: GHSA-98g6-xh36-x2p7; Microsoft.Extensions.Caching.Memory 8.0.0: GHSA-qj66-m88j-hmgj;
          e, via SqlClient, o IdentityModel 6.24.0: GHSA-59j7-ghrg-fj52). Optei por fixar as versoes corrigidas da mesma
