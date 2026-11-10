@@ -130,6 +130,13 @@ Estrutura esperada, espelhando o `OficinaMecanica`:
 - `tests/OficinaMecanica.Seguranca.Application.Tests` — testes de
   Handlers/Validators, usando **Moq** pra dependencias externas
   (`IUsuarioRepository`, `ITokenService`, `IPasswordHasher`, etc.).
+- `tests/OficinaMecanica.Seguranca.Infrastructure.Tests` — testes dos
+  servicos da Infrastructure (token/JWKS, hasher, seed, repositorio,
+  `AppDbContext` em EF InMemory); o Key Vault entra mockado
+  (`KeyClient`/`CryptographyClient`), nunca com rede.
+- `tests/OficinaMecanica.Seguranca.Functions.Tests` — Functions, middleware,
+  OpenAPI e health checks com requisicao/resposta em memoria
+  (`Support/FakeHttp.cs`).
 - `tests/OficinaMecanica.Seguranca.Integration.Tests` — smoke tests reais
   (Azurite + `func start`, via `HttpClient`), ja que Azure Functions
   isolated worker nao tem equivalente ao `WebApplicationFactory`.

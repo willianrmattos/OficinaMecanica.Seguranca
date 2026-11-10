@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Moq;
@@ -10,11 +11,15 @@ namespace OficinaMecanica.Seguranca.Functions.Tests.Support;
 // teste-duplo pronto, e o CreateResponse e o WriteStringAsync so precisam destes quatro membros.
 internal sealed class FakeHttpRequestData : HttpRequestData
 {
-    public FakeHttpRequestData() : base(Mock.Of<FunctionContext>())
+    private readonly byte[]? _corpo;
+
+    public FakeHttpRequestData(string? corpo = null) : base(Mock.Of<FunctionContext>())
     {
+        _corpo = corpo is null ? null : Encoding.UTF8.GetBytes(corpo);
     }
 
-    public override Stream Body => Stream.Null;
+    // Um stream novo a cada leitura: o fake nao guarda nada descartavel em campo, e cada Function le o corpo uma unica vez.
+    public override Stream Body => _corpo is null ? Stream.Null : new MemoryStream(_corpo);
     public override HttpHeadersCollection Headers { get; } = new();
     public override IReadOnlyCollection<IHttpCookie> Cookies => Array.Empty<IHttpCookie>();
     public override Uri Url => new("http://localhost/health");
