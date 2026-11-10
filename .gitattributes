@@ -1,0 +1,2 @@
+# O ruleset e enviado como esta para a API do GitHub (gh api --input): fica sempre em LF.
+.github/rulesets/*.json text eol=lf
