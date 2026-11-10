@@ -11,6 +11,12 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Os pacotes do EF Core (SqlServer, Design, Tools e InMemory) precisam subir na mesma versao: um bump isolado de um deles quebra o build
+    # (CS1705, assembly com versao maior que a referenciada pelos outros projetos). Em grupo, o Dependabot abre um PR so.
+    groups:
+      efcore:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
     ignore:
       # MediatR 13+ passou a exigir chave de licenca comercial; o ecossistema fica no 12.x gratuito. Patches e minors
       # do 12.x continuam chegando.
