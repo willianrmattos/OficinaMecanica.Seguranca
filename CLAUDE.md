@@ -134,6 +134,8 @@ pra so precisarem de um smoke test. Esse smoke test
 (`Integration.Tests`) sobe Azurite + Azure Functions Core Tools (`func
 start`) como processo real, testado via `HttpClient` comum.
 
+`Functions.Tests` cobre o que a Application nao alcanca e que o CI precisa medir: os health checks da Infrastructure (`SqlServerHealthCheck`, `KeyVaultHealthCheck`, `HealthCheckComCache`) e o `ProntidaoRelatorio`/`HealthFunction` da Functions. As Functions de health usam requisicao e resposta em memoria (`Support/FakeHttp.cs`): como so devolvem texto ou JSON, nao dependem do realismo do pipeline do host. `/health` e liveness (`Healthy`) e `/health/ready` e prontidao (banco e Key Vault, com cache), no mesmo formato dos outros servicos.
+
 ## Infraestrutura
 
 Toda a infra deste servico (Function App + Service Plan Consumption, banco

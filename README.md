@@ -98,7 +98,8 @@ Development` (nunca em producao real) - o step `Aplicar migrations` do
 
 - `POST /login` — autentica e retorna um JWT RS256
 - `GET /.well-known/jwks.json` — chave publica pra validacao de tokens
-- `GET /health` — health check
+- `GET /health` — liveness: responde `Healthy` em texto, sem olhar dependencias
+- `GET /health/ready` — prontidao: JSON com o status de cada dependencia (`sqlserver` e, em producao, `keyvault`); 200 quando saudavel, 503 quando alguma dependencia essencial falha. O resultado de cada check fica em cache por 5 segundos (`Health__ProntidaoCacheSegundos`), porque o endpoint e anonimo e fica atras da APIM
 - `GET /swagger/ui` — Swagger UI (documentacao interativa dos 3 endpoints acima, via `Microsoft.Azure.Functions.Worker.Extensions.OpenApi`); spec em `GET /openapi/v3.json` (ou `/swagger.json`/`/swagger.yaml`)
 - `GET /` — redireciona (302) pro Swagger UI, mesma ideia do `RoutePrefix = string.Empty` do monolito (Swashbuckle); qualquer outro caminho desconhecido continua 404 normalmente (ver `CLAUDE.md` pro motivo de precisar de uma rota catch-all pra isso)
 
@@ -153,6 +154,7 @@ docker compose up -d
 ```
 
 - `GET http://localhost:7071/health`
+- `GET http://localhost:7071/health/ready`
 - `POST http://localhost:7071/login` (body `{"cpf":"...","senha":"..."}`)
 - `GET http://localhost:7071/.well-known/jwks.json`
 - `GET http://localhost:7071/swagger/ui` — Swagger UI (mesmo `routePrefix` vazio via `func start`, so muda a porta se nao for a padrao)
@@ -175,7 +177,10 @@ func start
 ```bash
 dotnet test tests/OficinaMecanica.Seguranca.Domain.Tests
 dotnet test tests/OficinaMecanica.Seguranca.Application.Tests
+dotnet test tests/OficinaMecanica.Seguranca.Functions.Tests
 ```
+
+`Functions.Tests` cobre os health checks (cache, SQL Server, Key Vault), o relatorio de prontidao e as duas Functions de health, chamadas com requisicao e resposta em memoria (sem subir o host).
 
 `Integration.Tests` e um smoke test real (nao mockado): sobe Azurite +
 `func start` como processo real + LocalDB, e testa via `HttpClient` comum
