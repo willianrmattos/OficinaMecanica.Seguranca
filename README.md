@@ -137,6 +137,20 @@ App): https://apimfiap.azure-api.net/segurancaserver/swagger/ui (ver
   fallback de dev local usa um `kid` fixo, ver `CLAUDE.md` pra uma pegadinha
   conhecida disso).
 
+## Observabilidade
+
+A Function exporta traces, metricas e logs por OTLP para o New Relic, no mesmo desenho dos outros servicos (`Otel:Endpoint`).
+Como ela roda fora do cluster e nao alcanca o Collector do AKS, o endpoint e o OTLP do proprio New Relic, e o header
+`api-key` vem de um segredo do Key Vault (Key Vault Reference). Sem `Otel__Endpoint` a telemetria fica desligada (local e testes).
+
+| App setting | Valor |
+|---|---|
+| `Otel__Endpoint` | `https://otlp.nr-data.net:4317` |
+| `Otel__Headers` | `@Microsoft.KeyVault(SecretUri=...)`, o segredo guarda `api-key=<license key>` |
+
+Os dois sao definidos pelo Terraform do `OficinaMecanica.Infra` (modulo `functionapp`). O servico aparece no New Relic como
+`OficinaMecanica.Seguranca` (dashboard `dashboard-seguranca.json`).
+
 ## Rodando localmente
 
 ### Via Docker Compose (recomendado)
@@ -201,7 +215,7 @@ dotnet test tests/OficinaMecanica.Seguranca.Integration.Tests
 | Assinatura RS256 | Azure.Security.KeyVault.Keys + Azure.Identity | 4.10.0 / 1.21.0 |
 | Validacao de token | Microsoft.IdentityModel.Tokens | 8.22.0 |
 | API Docs | Microsoft.Azure.Functions.Worker.Extensions.OpenApi | 1.6.0 |
-| Tracing | OpenTelemetry + Azure.Monitor.OpenTelemetry.Exporter | 1.7.0 |
+| Telemetria | OpenTelemetry (OTLP para o New Relic) | 1.16.0 |
 | Testes | xUnit + FluentAssertions + Moq + Bogus | 2.9.2 / 6.12.0 / 4.20.70 / 35.6.1 |
 | Infra (app) | Docker + Docker Compose | — |
 | Infra (cloud) | Terraform (`OficinaMecanica.Infra`: Function App Consumption, Azure SQL Database, Key Vault) | — |

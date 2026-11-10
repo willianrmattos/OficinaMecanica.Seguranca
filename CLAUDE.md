@@ -134,6 +134,20 @@ pra so precisarem de um smoke test. Esse smoke test
 (`Integration.Tests`) sobe Azurite + Azure Functions Core Tools (`func
 start`) como processo real, testado via `HttpClient` comum.
 
+## Observabilidade
+
+A Function exporta traces, metricas e logs por OTLP para o New Relic, no mesmo desenho dos outros servicos (`Otel:Endpoint`).
+Como ela roda fora do cluster e nao alcanca o Collector do AKS, o endpoint e o OTLP do proprio New Relic, e o header
+`api-key` vem de um segredo do Key Vault (Key Vault Reference). Sem `Otel__Endpoint` a telemetria fica desligada (local e testes).
+
+| App setting | Valor |
+|---|---|
+| `Otel__Endpoint` | `https://otlp.nr-data.net:4317` |
+| `Otel__Headers` | `@Microsoft.KeyVault(SecretUri=...)`, o segredo guarda `api-key=<license key>` |
+
+Os dois sao definidos pelo Terraform do `OficinaMecanica.Infra` (modulo `functionapp`). O servico aparece no New Relic como
+`OficinaMecanica.Seguranca` (dashboard `dashboard-seguranca.json`).
+
 ## Infraestrutura
 
 Toda a infra deste servico (Function App + Service Plan Consumption, banco
