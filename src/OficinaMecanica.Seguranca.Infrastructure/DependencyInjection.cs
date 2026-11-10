@@ -5,16 +5,21 @@ using Azure.Security.KeyVault.Keys;
 using OficinaMecanica.Seguranca.Application.Interfaces;
 using OficinaMecanica.Seguranca.Domain.Interfaces;
 using OficinaMecanica.Seguranca.Infrastructure.Data;
+using OficinaMecanica.Seguranca.Infrastructure.Health;
 using OficinaMecanica.Seguranca.Infrastructure.Repositories;
 using OficinaMecanica.Seguranca.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace OficinaMecanica.Seguranca.Infrastructure;
 
 public static class DependencyInjection
 {
+    // So o /health/ready olha as dependencias (tag "ready"); o /health continua sem checar nada.
+    private static readonly string[] ProntidaoTags = { "ready" };
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         // EF Core
@@ -35,6 +40,14 @@ public static class DependencyInjection
 
         // Seed do admin inicial
         services.AddScoped<SeedAdminService>();
+
+        // Prontidao: banco e (em producao) Key Vault, cada um dentro de um cache curto (ver HealthCheckComCache).
+        services.AddOptions<OpcoesDaProntidao>().Configure(opcoes =>
+            opcoes.ProntidaoCacheSegundos = configuration.GetValue(
+                $"{OpcoesDaProntidao.Secao}:{nameof(OpcoesDaProntidao.ProntidaoCacheSegundos)}",
+                OpcoesDaProntidao.CachePadraoEmSegundos));
+        var prontidao = services.AddHealthChecks()
+            .AddCheckComCache<SqlServerHealthCheck>("sqlserver", HealthStatus.Unhealthy, ProntidaoTags);
 
         // KeyVault:Uri ausente = dev local/testes, sem depender de um Key Vault real na nuvem
         // registro um fallback que assina com uma chave RSA efemera gerada em memoria em vez do
@@ -66,6 +79,7 @@ public static class DependencyInjection
             var keyName = configuration["KeyVault:RsaKeyName"]!;
 
             services.AddSingleton(new KeyClient(keyVaultUri, credential));
+            prontidao.AddCheckComCache<KeyVaultHealthCheck>("keyvault", HealthStatus.Unhealthy, ProntidaoTags);
             services.AddSingleton<TokenCredential>(credential);
 
             // Token Service (assinatura RS256 remota via Key Vault)

@@ -1,0 +1,51 @@
+version: 2
+
+updates:
+  # Os PRs do Dependabot entram em release, como qualquer outra mudanca: o fluxo do repositorio e PR para release e
+  # merge de release em main feito a mao. Sem o target-branch eles abririam direto contra a main (branch padrao) e a
+  # deixariam com commits que a release nao tem.
+  - package-ecosystem: nuget
+    directory: "/"
+    target-branch: release
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    ignore:
+      # MediatR 13+ passou a exigir chave de licenca comercial; o ecossistema fica no 12.x gratuito. Patches e minors
+      # do 12.x continuam chegando.
+      - dependency-name: "MediatR*"
+        update-types: ["version-update:semver-major"]
+      # FluentAssertions 8+ tem licenca comercial (Xceed) para uso profissional; os testes ficam no 6.x. Patches e
+      # minors do 6.x continuam chegando.
+      - dependency-name: "FluentAssertions*"
+        update-types: ["version-update:semver-major"]
+      # Os pacotes do EF Core (SqlServer, Design, Tools, InMemory) sobem juntos e o projeto continua em net8.0: o
+      # EF Core 10 so existe para net10.0. A troca de major acontece junto da migracao de plataforma, nao por PR
+      # automatico.
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: release
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: "/"
+    target-branch: release
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    ignore:
+      # O alvo e net8.0 (LTS) e o runtime da Function e o isolated worker 4 para .NET 8; a migracao para outra versao
+      # do .NET e uma decisao explicita, com ADR, e nao um PR automatico que trocaria a imagem base sem trocar o
+      # TargetFramework.
+      - dependency-name: "dotnet/sdk"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "azure-functions/dotnet-isolated"
+        update-types: ["version-update:semver-major"]

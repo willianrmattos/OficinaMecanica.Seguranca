@@ -50,6 +50,12 @@ jobs:
       - name: Test - Application
         run: dotnet test tests/OficinaMecanica.Seguranca.Application.Tests --no-build --no-restore --configuration Release --logger "trx;LogFileName=application-tests.trx" --results-directory TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
+      - name: Test - Infrastructure
+        run: dotnet test tests/OficinaMecanica.Seguranca.Infrastructure.Tests --no-build --no-restore --configuration Release --logger "trx;LogFileName=infrastructure-tests.trx" --results-directory TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Test - Functions
+        run: dotnet test tests/OficinaMecanica.Seguranca.Functions.Tests --no-build --no-restore --configuration Release --logger "trx;LogFileName=functions-tests.trx" --results-directory TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
       - name: Publish test results
         uses: dorny/test-reporter@3eeb9fc888e82e8be2fb356bbeec2750231672bc # v1
         if: always()

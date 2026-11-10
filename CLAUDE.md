@@ -28,9 +28,11 @@ src/
                                               # HealthFunction (so traduzem HTTP <-> MediatR, sem logica de negocio)
 tests/
   OficinaMecanica.Seguranca.Domain.Tests/
-  OficinaMecanica.Seguranca.Application.Tests/  # Moq
-  OficinaMecanica.Seguranca.Integration.Tests/  # ver secao "Testes" abaixo
-  OficinaMecanica.Seguranca.Tests.Common/       # Builders com Bogus (UsuarioBuilder)
+  OficinaMecanica.Seguranca.Application.Tests/    # Moq
+  OficinaMecanica.Seguranca.Infrastructure.Tests/ # tokens/JWKS (RSA local e Key Vault com KeyClient mockado), hasher, seed, repositorio e DbContext (EF InMemory)
+  OficinaMecanica.Seguranca.Functions.Tests/      # Functions, middleware, OpenAPI e health checks com requisicao/resposta em memoria
+  OficinaMecanica.Seguranca.Integration.Tests/    # ver secao "Testes" abaixo
+  OficinaMecanica.Seguranca.Tests.Common/         # Builders com Bogus (UsuarioBuilder)
 docs/
   README.md                                     # indice da pasta
   adr/                                          # decisoes tecnicas pontuais (ADR)
@@ -126,13 +128,32 @@ roda e o seed do admin falha contra um schema inexistente.
 ## Testes
 
 Isolated worker do Azure Functions nao tem equivalente ao
-`WebApplicationFactory` do ASP.NET Core (`HttpRequestData`/`FunctionContext`
-sao dificeis de fakear sem perder realismo). Por isso: toda logica testavel
-fica na Application (handlers via MediatR, Moq — mesmo padrao do
-`OficinaMecanica`), `LoginFunction`/`JwksFunction` ficam finas o bastante
-pra so precisarem de um smoke test. Esse smoke test
-(`Integration.Tests`) sobe Azurite + Azure Functions Core Tools (`func
+`WebApplicationFactory` do ASP.NET Core: o pipeline completo (com o
+`FunctionContext` preenchido pelo SDK) so existe no processo do host de
+verdade. Por isso: a regra de negocio fica na Application (handlers via
+MediatR, Moq — mesmo padrao do `OficinaMecanica`), as Functions ficam finas
+(so traduzem HTTP <-> MediatR) e sao testadas em unitario com requisicao e
+resposta em memoria, e o que depende do host real fica num smoke test
+(`Integration.Tests`) que sobe Azurite + Azure Functions Core Tools (`func
 start`) como processo real, testado via `HttpClient` comum.
+
+`Infrastructure.Tests` e `Functions.Tests` cobrem o que a Application nao alcanca e que o CI precisa medir. Na Infrastructure: os servicos de token e JWKS (`LocalRsaTokenService`/`LocalRsaJwksProvider` com uma RSA real; `KeyVaultTokenService`/`KeyVaultJwksProvider` com `KeyClient` e `CryptographyClient` mockados, assinando de verdade com uma RSA local para o teste conferir a assinatura do JWT), o `BCryptPasswordHasher`, o `SeedAdminService`, o `UsuarioRepository` e o `AppDbContext` (EF InMemory). Na Functions (o projeto de teste tambem referencia a Infrastructure): os health checks da Infrastructure (`SqlServerHealthCheck`, `KeyVaultHealthCheck`, `HealthCheckComCache`), `LoginFunction`, `JwksFunction`, `RootFunction`, `HealthFunction`, o `ProntidaoRelatorio`, o filtro de base path e as opcoes do OpenAPI, o mapeamento de excecoes do middleware. As Functions usam requisicao e resposta em memoria (`Support/FakeHttp.cs`, com corpo configuravel): nao dependem do realismo do pipeline do host. `/health` e liveness (`Healthy`) e `/health/ready` e prontidao (banco e Key Vault, com cache), no mesmo formato dos outros servicos.
+
+Dois pontos de testabilidade que moram no codigo de producao: o `KeyVaultTokenService` recebe, como ultimo parametro opcional, a fabrica do `CryptographyClient` (sem ela o teste precisaria de rede; em producao vale o padrao), e o `ExceptionHandlingMiddleware.MapearExcecao` e `internal` com `InternalsVisibleTo` para o `Functions.Tests`. O caminho de erro do `ExceptionHandlingMiddleware.Invoke` (montar a resposta e gravar em `GetInvocationResult`) depende do `IFunctionBindingsFeature`, interno do SDK e so preenchido pelo host real: fica para o `Integration.Tests`.
+
+## Observabilidade
+
+A Function exporta traces, metricas e logs por OTLP para o New Relic, no mesmo desenho dos outros servicos (`Otel:Endpoint`).
+Como ela roda fora do cluster e nao alcanca o Collector do AKS, o endpoint e o OTLP do proprio New Relic, e o header
+`api-key` vem de um segredo do Key Vault (Key Vault Reference). Sem `Otel__Endpoint` a telemetria fica desligada (local e testes).
+
+| App setting | Valor |
+|---|---|
+| `Otel__Endpoint` | `https://otlp.nr-data.net:4317` |
+| `Otel__Headers` | `@Microsoft.KeyVault(SecretUri=...)`, o segredo guarda `api-key=<license key>` |
+
+Os dois sao definidos pelo Terraform do `OficinaMecanica.Infra` (modulo `functionapp`). O servico aparece no New Relic como
+`OficinaMecanica.Seguranca` (dashboard `dashboard-seguranca.json`).
 
 ## Infraestrutura
 
@@ -150,7 +171,8 @@ Registration/Federated Credential proprios, federados pra este repo).
 em vez de imagem+AKS:
 
 1. **build-and-test**: restore/build da solution inteira +
-   `Domain.Tests`/`Application.Tests` (rapidos, sem dependencia externa).
+   `Domain.Tests`/`Application.Tests`/`Infrastructure.Tests`/`Functions.Tests`
+   (rapidos, sem dependencia externa), com a cobertura em OpenCover para o job `Quality`.
    `Integration.Tests` fica de fora do CI de proposito - sobe Azure
    Functions Core Tools (`func start`) + Azurite como processos reais e
    precisa de um SQL Server de verdade pra migration (LocalDB local, ver

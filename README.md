@@ -98,7 +98,8 @@ Development` (nunca em producao real) - o step `Aplicar migrations` do
 
 - `POST /login` — autentica e retorna um JWT RS256
 - `GET /.well-known/jwks.json` — chave publica pra validacao de tokens
-- `GET /health` — health check
+- `GET /health` — liveness: responde `Healthy` em texto, sem olhar dependencias
+- `GET /health/ready` — prontidao: JSON com o status de cada dependencia (`sqlserver` e, em producao, `keyvault`); 200 quando saudavel, 503 quando alguma dependencia essencial falha. O resultado de cada check fica em cache por 5 segundos (`Health__ProntidaoCacheSegundos`), porque o endpoint e anonimo e fica atras da APIM
 - `GET /swagger/ui` — Swagger UI (documentacao interativa dos 3 endpoints acima, via `Microsoft.Azure.Functions.Worker.Extensions.OpenApi`); spec em `GET /openapi/v3.json` (ou `/swagger.json`/`/swagger.yaml`)
 - `GET /` — redireciona (302) pro Swagger UI, mesma ideia do `RoutePrefix = string.Empty` do monolito (Swashbuckle); qualquer outro caminho desconhecido continua 404 normalmente (ver `CLAUDE.md` pro motivo de precisar de uma rota catch-all pra isso)
 
@@ -137,6 +138,20 @@ App): https://apimfiap.azure-api.net/segurancaserver/swagger/ui (ver
   fallback de dev local usa um `kid` fixo, ver `CLAUDE.md` pra uma pegadinha
   conhecida disso).
 
+## Observabilidade
+
+A Function exporta traces, metricas e logs por OTLP para o New Relic, no mesmo desenho dos outros servicos (`Otel:Endpoint`).
+Como ela roda fora do cluster e nao alcanca o Collector do AKS, o endpoint e o OTLP do proprio New Relic, e o header
+`api-key` vem de um segredo do Key Vault (Key Vault Reference). Sem `Otel__Endpoint` a telemetria fica desligada (local e testes).
+
+| App setting | Valor |
+|---|---|
+| `Otel__Endpoint` | `https://otlp.nr-data.net:4317` |
+| `Otel__Headers` | `@Microsoft.KeyVault(SecretUri=...)`, o segredo guarda `api-key=<license key>` |
+
+Os dois sao definidos pelo Terraform do `OficinaMecanica.Infra` (modulo `functionapp`). O servico aparece no New Relic como
+`OficinaMecanica.Seguranca` (dashboard `dashboard-seguranca.json`).
+
 ## Rodando localmente
 
 ### Via Docker Compose (recomendado)
@@ -153,6 +168,7 @@ docker compose up -d
 ```
 
 - `GET http://localhost:7071/health`
+- `GET http://localhost:7071/health/ready`
 - `POST http://localhost:7071/login` (body `{"cpf":"...","senha":"..."}`)
 - `GET http://localhost:7071/.well-known/jwks.json`
 - `GET http://localhost:7071/swagger/ui` — Swagger UI (mesmo `routePrefix` vazio via `func start`, so muda a porta se nao for a padrao)
@@ -175,7 +191,11 @@ func start
 ```bash
 dotnet test tests/OficinaMecanica.Seguranca.Domain.Tests
 dotnet test tests/OficinaMecanica.Seguranca.Application.Tests
+dotnet test tests/OficinaMecanica.Seguranca.Infrastructure.Tests
+dotnet test tests/OficinaMecanica.Seguranca.Functions.Tests
 ```
+
+`Infrastructure.Tests` cobre a emissao de token e o JWKS (RSA local e Key Vault com o cliente mockado), o hasher, o seed do admin, o repositorio e o `AppDbContext` (EF InMemory). `Functions.Tests` cobre as Functions (login, JWKS, raiz e health), os health checks (cache, SQL Server, Key Vault), o relatorio de prontidao, o OpenAPI e o mapeamento de excecoes, chamados com requisicao e resposta em memoria (sem subir o host).
 
 `Integration.Tests` e um smoke test real (nao mockado): sobe Azurite +
 `func start` como processo real + LocalDB, e testa via `HttpClient` comum
@@ -201,7 +221,7 @@ dotnet test tests/OficinaMecanica.Seguranca.Integration.Tests
 | Assinatura RS256 | Azure.Security.KeyVault.Keys + Azure.Identity | 4.10.0 / 1.21.0 |
 | Validacao de token | Microsoft.IdentityModel.Tokens | 8.22.0 |
 | API Docs | Microsoft.Azure.Functions.Worker.Extensions.OpenApi | 1.6.0 |
-| Tracing | OpenTelemetry + Azure.Monitor.OpenTelemetry.Exporter | 1.7.0 |
+| Telemetria | OpenTelemetry (OTLP para o New Relic) | 1.16.0 |
 | Testes | xUnit + FluentAssertions + Moq + Bogus | 2.9.2 / 6.12.0 / 4.20.70 / 35.6.1 |
 | Infra (app) | Docker + Docker Compose | — |
 | Infra (cloud) | Terraform (`OficinaMecanica.Infra`: Function App Consumption, Azure SQL Database, Key Vault) | — |

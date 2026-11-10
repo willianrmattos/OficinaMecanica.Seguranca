@@ -15,11 +15,18 @@
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.10.0" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <!-- Dependencias transitivas do EntityFrameworkCore.SqlServer 8.0.0 que chegam em versoes com vulnerabilidade
+         (Microsoft.Data.SqlClient 5.1.1: GHSA-98g6-xh36-x2p7; Microsoft.Extensions.Caching.Memory 8.0.0: GHSA-qj66-m88j-hmgj;
+         e, via SqlClient, o IdentityModel 6.24.0: GHSA-59j7-ghrg-fj52). Optei por fixar as versoes corrigidas da mesma
+         linha (5.x e 8.x), sem trocar de major, para a Function nao publicar pacote vulneravel. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.3" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
   </ItemGroup>
 
