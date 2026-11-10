@@ -191,10 +191,11 @@ func start
 ```bash
 dotnet test tests/OficinaMecanica.Seguranca.Domain.Tests
 dotnet test tests/OficinaMecanica.Seguranca.Application.Tests
+dotnet test tests/OficinaMecanica.Seguranca.Infrastructure.Tests
 dotnet test tests/OficinaMecanica.Seguranca.Functions.Tests
 ```
 
-`Functions.Tests` cobre os health checks (cache, SQL Server, Key Vault), o relatorio de prontidao e as duas Functions de health, chamadas com requisicao e resposta em memoria (sem subir o host).
+`Infrastructure.Tests` cobre a emissao de token e o JWKS (RSA local e Key Vault com o cliente mockado), o hasher, o seed do admin, o repositorio e o `AppDbContext` (EF InMemory). `Functions.Tests` cobre as Functions (login, JWKS, raiz e health), os health checks (cache, SQL Server, Key Vault), o relatorio de prontidao, o OpenAPI e o mapeamento de excecoes, chamados com requisicao e resposta em memoria (sem subir o host).
 
 `Integration.Tests` e um smoke test real (nao mockado): sobe Azurite +
 `func start` como processo real + LocalDB, e testa via `HttpClient` comum

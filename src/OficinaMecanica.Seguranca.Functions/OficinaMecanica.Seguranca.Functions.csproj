@@ -21,10 +21,19 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.16.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
+    <!-- Optei por fixar as versoes corrigidas de duas dependencias transitivas (via NETStandard.Library 1.6.1, que o
+         pacote do OpenAPI arrasta) que carregam avisos de vulnerabilidade High: System.Net.Http 4.3.0 (GHSA-7jgj-8wvc-jh57)
+         e System.Text.RegularExpressions 4.3.0 (GHSA-cmhx-cq75-c4mj). -->
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OficinaMecanica.Seguranca.Functions.Tests" />
   </ItemGroup>
 
   <ItemGroup>

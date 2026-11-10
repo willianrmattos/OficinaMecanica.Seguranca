@@ -18,7 +18,7 @@ public class KeyVaultTokenService : ITokenService
 
     private readonly KeyClient _keyClient;
     private readonly string _keyName;
-    private readonly TokenCredential _credential;
+    private readonly Func<KeyVaultKey, CryptographyClient> _criarClienteDeCriptografia;
     private readonly int _expiracaoMinutos;
     private readonly string _issuer;
     private readonly string _audience;
@@ -36,11 +36,14 @@ public class KeyVaultTokenService : ITokenService
         TokenCredential credential,
         int expiracaoMinutos,
         string issuer,
-        string audience)
+        string audience,
+        // Optei por deixar a criacao do CryptographyClient injetavel: ele e construido aqui dentro e fala direto com o Key Vault,
+        // entao sem este ponto o teste de GerarTokenAsync precisaria de rede. Em producao ninguem passa nada e vale o padrao.
+        Func<KeyVaultKey, CryptographyClient>? criarClienteDeCriptografia = null)
     {
         _keyClient = keyClient;
         _keyName = keyName;
-        _credential = credential;
+        _criarClienteDeCriptografia = criarClienteDeCriptografia ?? (chave => new CryptographyClient(chave.Id, credential));
         _expiracaoMinutos = expiracaoMinutos;
         _issuer = issuer;
         _audience = audience;
@@ -103,7 +106,7 @@ public class KeyVaultTokenService : ITokenService
 
             var response = await _keyClient.GetKeyAsync(_keyName, cancellationToken: cancellationToken);
             var key = response.Value;
-            var cryptoClient = new CryptographyClient(key.Id, _credential);
+            var cryptoClient = _criarClienteDeCriptografia(key);
 
             _cachedKey = key;
             _cachedCryptoClient = cryptoClient;

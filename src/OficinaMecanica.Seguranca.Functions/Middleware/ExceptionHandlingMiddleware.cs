@@ -38,7 +38,7 @@ public class ExceptionHandlingMiddleware : IFunctionsWorkerMiddleware
         }
     }
 
-    private static (HttpStatusCode statusCode, string tipo, string mensagem, object? erros) MapearExcecao(Exception ex) => ex switch
+    internal static (HttpStatusCode statusCode, string tipo, string mensagem, object? erros) MapearExcecao(Exception ex) => ex switch
     {
         AutenticacaoException autenticacaoEx => (HttpStatusCode.Unauthorized, "Erro de Autenticação", autenticacaoEx.Message, null),
         ValidationException validationEx => (HttpStatusCode.BadRequest, "Erro de Validação", "Erro de validação.", validationEx.Errors.Select(e => new { campo = e.PropertyName, mensagem = e.ErrorMessage })),
