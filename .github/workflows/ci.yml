@@ -42,11 +42,13 @@ jobs:
       - name: Build
         run: dotnet build OficinaMecanica.Seguranca.sln --no-restore --configuration Release
 
+      # A cobertura sai em OpenCover (coverlet.collector) porque e o formato que o SonarCloud importa. Os testes de
+      # Integration ficam fora do CI: sobem um host real do Azure Functions com Azurite (ver FunctionHostFixture).
       - name: Test - Domain
-        run: dotnet test tests/OficinaMecanica.Seguranca.Domain.Tests --no-build --no-restore --configuration Release --logger "trx;LogFileName=domain-tests.trx" --results-directory TestResults
+        run: dotnet test tests/OficinaMecanica.Seguranca.Domain.Tests --no-build --no-restore --configuration Release --logger "trx;LogFileName=domain-tests.trx" --results-directory TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
       - name: Test - Application
-        run: dotnet test tests/OficinaMecanica.Seguranca.Application.Tests --no-build --no-restore --configuration Release --logger "trx;LogFileName=application-tests.trx" --results-directory TestResults
+        run: dotnet test tests/OficinaMecanica.Seguranca.Application.Tests --no-build --no-restore --configuration Release --logger "trx;LogFileName=application-tests.trx" --results-directory TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
       - name: Publish test results
         uses: dorny/test-reporter@3eeb9fc888e82e8be2fb356bbeec2750231672bc # v1
@@ -63,6 +65,119 @@ jobs:
           name: test-results
           path: TestResults/
 
+      # O job quality importa estes arquivos no SonarCloud em vez de rodar os testes de novo.
+      - name: Publicar OpenCover para o Quality
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cobertura-opencover
+          path: TestResults/**/coverage.opencover.xml
+          retention-days: 7
+          if-no-files-found: error
+
+  quality:
+    name: "Quality"
+    needs: build-and-test
+    # PR vindo de fork nao recebe secrets (SONAR_TOKEN chega vazio), entao a analise nao tem como rodar. Pular e o
+    # comportamento esperado: um check obrigatorio pulado conta como satisfeito, e o PR de fork continua passando pelo
+    # "Build & Test" e por revisao.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      # O SonarCloud nao suporta OIDC; o token fica como secret do repositorio e so os steps abaixo o recebem.
+      SONAR_SCANNER_VERSION: 12.1.0
+      SONAR_HOST_URL: https://sonarcloud.io
+    steps:
+      # Optei por falhar cedo e com mensagem clara: sem este step, a ausencia do token apareceria como um erro obscuro
+      # do scanner ou, pior, o job passaria sem analisar nada.
+      - name: Verificar configuracao do SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+        run: |
+          faltando=""
+          [ -n "$SONAR_TOKEN" ] || faltando="$faltando secret:SONAR_TOKEN"
+          [ -n "$SONAR_PROJECT_KEY" ] || faltando="$faltando variavel:SONAR_PROJECT_KEY"
+          [ -n "$SONAR_ORGANIZATION" ] || faltando="$faltando variavel:SONAR_ORGANIZATION"
+          if [ -n "$faltando" ]; then
+            echo "::error title=SonarCloud nao configurado::Falta configurar no repositorio (Settings > Secrets and variables > Actions):$faltando."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # O SonarCloud precisa do historico completo para atribuir o codigo novo (blame) e calcular o Quality Gate.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: "8.0.x"
+
+      # O scanner e Java por baixo.
+      - name: Setup Java
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Cache pacotes do SonarCloud
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Instalar o scanner do SonarCloud
+        run: dotnet tool install --global dotnet-sonarscanner --version "$SONAR_SCANNER_VERSION"
+
+      # A cobertura vem do job build-and-test (mesmo commit, mesmo caminho de workspace, entao os caminhos de arquivo
+      # dentro do OpenCover continuam validos aqui).
+      - name: Baixar o OpenCover do build-and-test
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cobertura-opencover
+          path: TestResults
+
+      # O scanner instrumenta a compilacao: begin -> build -> end. O build precisa ser completo (--no-incremental)
+      # e acontece neste job porque o do build-and-test nao passou pelo scanner.
+      # Fora da cobertura ficam as Migrations, o Program.cs, o DependencyInjection* e as EF Configurations, que sao
+      # montagem e codigo gerado; as Migrations tambem saem da analise de codigo.
+      # sonar.qualitygate.wait=true faz o "end" esperar o Quality Gate e FALHAR o job se ele reprovar.
+      - name: Analise SonarCloud (begin, build, end)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet-sonarscanner begin \
+            /k:"$SONAR_PROJECT_KEY" \
+            /o:"$SONAR_ORGANIZATION" \
+            /d:sonar.token="$SONAR_TOKEN" \
+            /d:sonar.host.url="$SONAR_HOST_URL" \
+            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
+            /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/DependencyInjection*.cs,**/Data/Configurations/**" \
+            /d:sonar.exclusions="**/Migrations/**" \
+            /d:sonar.qualitygate.wait=true \
+            /d:sonar.qualitygate.timeout=300
+          dotnet build OficinaMecanica.Seguranca.sln --configuration Release --no-incremental
+          dotnet-sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+
   deploy:
     # Mesma Function App recebe deploy tanto de main quanto de release - o
     # cluster/plano nao tem recurso pra manter uma segunda instancia (ver
@@ -70,7 +185,7 @@ jobs:
     # processo (branch protegida + PR obrigatorio), nao de infraestrutura.
     name: Deploy to Azure Function App
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: [build-and-test, quality]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release')
     permissions:
       id-token: write
