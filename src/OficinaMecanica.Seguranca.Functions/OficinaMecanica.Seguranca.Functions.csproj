@@ -19,7 +19,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.16.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.16.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
     <!-- Optei por fixar as versoes corrigidas de duas dependencias transitivas (via NETStandard.Library 1.6.1, que o
          pacote do OpenAPI arrasta) que carregam avisos de vulnerabilidade High: System.Net.Http 4.3.0 (GHSA-7jgj-8wvc-jh57)
